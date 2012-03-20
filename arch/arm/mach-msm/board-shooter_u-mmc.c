@@ -34,8 +34,6 @@
 #include "board-shooter_u.h"
 #include "proc_comm.h"
 #include <mach/msm_iomap.h>
-#include <mach/htc_sleep_clk.h>
-
 #include <linux/mfd/pmic8058.h>
 #include "mpm.h"
 #include <linux/irq.h>
@@ -154,19 +152,22 @@ static unsigned int shooter_u_wifi_status(struct device *dev)
 	return shooter_u_wifi_cd;
 }
 
+static unsigned int shooter_u_wifislot_type = MMC_TYPE_SDIO_WIFI;
 static struct mmc_platform_data shooter_u_wifi_data = {
         .ocr_mask               = MMC_VDD_28_29,
         .status                 = shooter_u_wifi_status,
         .register_status_notify = shooter_u_wifi_status_register,
         .embedded_sdio          = &shooter_u_wifi_emb_data,
         .mmc_bus_width  = MMC_CAP_4_BIT_DATA,
+	.slot_type	= &shooter_u_wifislot_type,
         .msmsdcc_fmin   = 400000,
         .msmsdcc_fmid   = 24000000,
         .msmsdcc_fmax   = 48000000,
         .nonremovable   = 0,
-	//.cfg_mpm_sdiowakeup = msm_sdcc_cfg_mpm_sdiowakeup,
 	.pclk_src_dfab	= 1,
-	.dummy52_required = 1,
+	//.cfg_mpm_sdiowakeup = msm_sdcc_cfg_mpm_sdiowakeup,
+	// HTC_WIFI_MOD, temp remove dummy52
+	//.dummy52_required = 1,
 };
 
 
@@ -199,7 +200,7 @@ int shooter_u_wifi_power(int on)
 		config_gpio_table(wifi_off_gpio_table,
 				  ARRAY_SIZE(wifi_off_gpio_table));
 	}
-	htc_wifi_bt_sleep_clk_ctl(on, ID_WIFI);
+	//htc_wifi_bt_sleep_clk_ctl(on, ID_WIFI);
 	mdelay(1);//Delay 1 ms, Recommand by Hardware
 	gpio_set_value(SHOOTER_U_GPIO_WIFI_SHUTDOWN_N, on); /* WIFI_SHUTDOWN */
 

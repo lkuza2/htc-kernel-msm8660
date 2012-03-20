@@ -19,68 +19,79 @@
 
 #define SHOOTER_U_PROJECT_NAME	"shooter_u"
 
-
-/* Macros assume PMIC GPIOs start at 0 */
-#define PM8058_GPIO_BASE			NR_MSM_GPIOS
-#define PM8058_GPIO_PM_TO_SYS(pm_gpio)		(pm_gpio + PM8058_GPIO_BASE)
-#define PM8058_GPIO_SYS_TO_PM(sys_gpio)		(sys_gpio - PM8058_GPIO_BASE)
-#define PM8058_IRQ_BASE				(NR_MSM_IRQS + NR_GPIO_IRQS)
-
-#define PM8901_GPIO_BASE			(PM8058_GPIO_BASE + \
-						PM8058_GPIOS + PM8058_MPPS)
-#define PM8901_GPIO_PM_TO_SYS(pm_gpio)		(pm_gpio + PM8901_GPIO_BASE)
-#define PM8901_GPIO_SYS_TO_PM(sys_gpio)		(sys_gpio - PM901_GPIO_BASE)
-#define PM8901_IRQ_BASE				(PM8058_IRQ_BASE + \
-						NR_PMIC8058_IRQS)
-
-#define GPIO_EXPANDER_GPIO_BASE \
-	(PM8901_GPIO_BASE + PM8901_MPPS)
-#define GPIO_EXPANDER_IRQ_BASE (PM8901_IRQ_BASE + NR_PMIC8901_IRQS)
-
-#if 0
-#define MSM_LINUX_BASE1		0x04000000
-#define MSM_LINUX_SIZE1		0x0C000000
-#define MSM_LINUX_BASE2		0x20000000
-#define MSM_LINUX_SIZE2		0x0BB00000
-#define MSM_MEM_256MB_OFFSET	0x10000000
-
-#define MSM_GPU_MEM_BASE	0x00100000
-#define MSM_GPU_MEM_SIZE	0x00300000
-
-#define MSM_RAM_CONSOLE_BASE	0x00500000
-#define MSM_RAM_CONSOLE_SIZE	0x00100000
-
-#define MSM_PMEM_ADSP_BASE  	0x2BB00000
-#define MSM_PMEM_ADSP_SIZE	0x01C00000 /* for 8M(4:3) + gpu effect */
-#define PMEM_KERNEL_EBI1_BASE   0x2D700000
-#define PMEM_KERNEL_EBI1_SIZE   0x00600000
-
-#define MSM_PMEM_CAMERA_BASE	0x2DD00000
-#define MSM_PMEM_CAMERA_SIZE	0x00000000
-
-#define MSM_PMEM_MDP_BASE	0x2DD00000
-#define MSM_PMEM_MDP_SIZE	0x02000000
-
-#define MSM_FB_BASE		0x2FD00000
-#define MSM_FB_SIZE		0x00300000
-#endif
-
 #define MSM_RAM_CONSOLE_BASE	MSM_HTC_RAM_CONSOLE_PHYS
-#define MSM_RAM_CONSOLE_SIZE	(MSM_HTC_RAM_CONSOLE_SIZE - SZ_64K) /* 64K for CIQ */
+#define MSM_RAM_CONSOLE_SIZE	MSM_HTC_RAM_CONSOLE_SIZE
 
-#ifdef CONFIG_BUILD_CIQ
-#define MSM_PMEM_CIQ_BASE	MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE
-#define MSM_PMEM_CIQ_SIZE	SZ_64K
-#define MSM_PMEM_CIQ1_BASE	MSM_PMEM_CIQ_BASE
-#define MSM_PMEM_CIQ1_SIZE	MSM_PMEM_CIQ_SIZE
-#define MSM_PMEM_CIQ2_BASE	MSM_PMEM_CIQ_BASE
-#define MSM_PMEM_CIQ2_SIZE	MSM_PMEM_CIQ_SIZE
-#define MSM_PMEM_CIQ3_BASE	MSM_PMEM_CIQ_BASE
-#define MSM_PMEM_CIQ3_SIZE	MSM_PMEM_CIQ_SIZE
+/* Memory map */
+
+#if defined(CONFIG_CRYPTO_DEV_QCRYPTO) || \
+		defined(CONFIG_CRYPTO_DEV_QCRYPTO_MODULE) || \
+		defined(CONFIG_CRYPTO_DEV_QCEDEV) || \
+		defined(CONFIG_CRYPTO_DEV_QCEDEV_MODULE)
+#define QCE_SIZE		0x10000
+#define QCE_0_BASE		0x18500000
 #endif
+
+#ifdef CONFIG_FB_MSM_TRIPLE_BUFFER
+#define MSM_FB_PRIM_BUF_SIZE (960 * ALIGN(540, 32) * 4 * 3) /* 4 bpp x 3 pages */
+#else
+#define MSM_FB_PRIM_BUF_SIZE (960 * ALIGN(540, 32) * 4 * 2) /* 4 bpp x 2 pages */
+#endif
+
+#ifdef CONFIG_FB_MSM_HDMI_MSM_PANEL
+#define MSM_FB_EXT_BUF_SIZE  (1920 * 1080 * 2 * 1) /* 2 bpp x 1 page */
+#else
+#define MSM_FB_EXT_BUFT_SIZE	0
+#endif
+
+#ifdef CONFIG_FB_MSM_OVERLAY_WRITEBACK
+/* width x height x 3 bpp x 2 frame buffer */
+#define MSM_FB_WRITEBACK_SIZE roundup(960 * ALIGN(540, 32) * 3 * 2, 4096)
+#define MSM_FB_WRITEBACK_OFFSET 0
+#else
+#define MSM_FB_WRITEBACK_SIZE   0
+#define MSM_FB_WRITEBACK_OFFSET 0
+#endif
+
+/* Note: must be multiple of 4096 */
+#define MSM_FB_SIZE roundup(MSM_FB_PRIM_BUF_SIZE + MSM_FB_EXT_BUF_SIZE, 4096)
+
+#define MSM_PMEM_MDP_SIZE       0x2000000
+#define MSM_PMEM_ADSP_SIZE      0x23AC000
+#define MSM_PMEM_ADSP2_SIZE     0x654000 /* 1152 * 1920 * 1.5 * 2 */
+#define MSM_PMEM_AUDIO_SIZE     0x239000
+#define MSM_PMEM_KERNEL_EBI1_SIZE       0xC7000
+
+#define MSM_FB_WRITEBACK_BASE   (0x45C00000)
+#define MSM_PMEM_AUDIO_BASE     (0x46400000)
+#define MSM_PMEM_ADSP_BASE      (0x40400000)
+#define MSM_PMEM_ADSP2_BASE     (MSM_PMEM_ADSP_BASE + MSM_PMEM_ADSP_SIZE)
+#define MSM_FB_BASE             (0x70000000 - MSM_FB_SIZE)
+#define MSM_PMEM_MDP_BASE       (0x6D600000)
+#define MSM_PMEM_KERNEL_EBI1_BASE       (MSM_PMEM_AUDIO_BASE + MSM_PMEM_AUDIO_SIZE)
+
+#define MSM_SMI_BASE          0x38000000
+#define MSM_SMI_SIZE          0x4000000
+
+/* Kernel SMI PMEM Region for video core, used for Firmware */
+/* and encoder,decoder scratch buffers */
+/* Kernel SMI PMEM Region Should always precede the user space */
+/* SMI PMEM Region, as the video core will use offset address */
+/* from the Firmware base */
+#define KERNEL_SMI_BASE       (MSM_SMI_BASE)
+#define KERNEL_SMI_SIZE       0x400000
+
+/* User space SMI PMEM Region for video core*/
+/* used for encoder, decoder input & output buffers  */
+#define USER_SMI_BASE         (KERNEL_SMI_BASE + KERNEL_SMI_SIZE)
+#define USER_SMI_SIZE         (MSM_SMI_SIZE - KERNEL_SMI_SIZE)
+#define MSM_PMEM_SMIPOOL_BASE USER_SMI_BASE
+#define MSM_PMEM_SMIPOOL_SIZE USER_SMI_SIZE
+
+#define PHY_BASE_ADDR1  0x48000000
+#define SIZE_ADDR1      0x25600000
 
 /* GPIO definition */
-
 
 /* Direct Keys */
 #define SHOOTER_U_GPIO_KEY_CAM_STEP1   (123)
@@ -133,8 +144,9 @@
 /* USB */
 #define SHOOTER_U_GPIO_USB_ID        (63)
 #define SHOOTER_U_GPIO_MHL_RESET        (70)
+#define SHOOTER_U_GPIO_MHL_INT        (71)
 #define SHOOTER_U_GPIO_MHL_USB_EN         (139)
-#define SHOOTER_U_GPIO_MHL_USB_SW        (99)
+#define SHOOTER_U_GPIO_MHL_USB_SWITCH      (99)
 
 /* Camera */
 
@@ -151,19 +163,11 @@
 #define SHOOTER_U_SPI_CS                 (35)
 #define SHOOTER_U_SPI_CLK                (36)
 
-/* LCM */
-#define SHOOTER_U_CTL_3D_1		(131)
-#define SHOOTER_U_CTL_3D_2		(132)
-#define SHOOTER_U_CTL_3D_3		(133)
-#define SHOOTER_U_CTL_3D_4		(134)
-//#define SHOOTER_U_LCM_3D_PDz		(135)
-
 /* CAMERA SPI */
 #define SHOOTER_U_SP3D_SPI_DO                 (41)
 #define SHOOTER_U_SP3D_SPI_DI                 (42)
 #define SHOOTER_U_SP3D_SPI_CS                 (43)
 #define SHOOTER_U_SP3D_SPI_CLK                (44)
-
 
 /* CAMERA GPIO */
 #define SHOOTER_U_CAM_I2C_SDA           (47)
@@ -186,7 +190,7 @@
 #define SHOOTER_U_CTL_3D_2		(132)
 #define SHOOTER_U_CTL_3D_3		(133)
 #define SHOOTER_U_CTL_3D_4		(134)
-//#define SHOOTER_U_LCM_3D_PDz		(135)
+
 #define GPIO_LCM_ID	50
 #define GPIO_LCM_RST_N	66
 
@@ -196,7 +200,7 @@
 #define PMGPIO(x) (x-1)
 #define SHOOTER_U_VOL_UP             (104)
 #define SHOOTER_U_VOL_DN             (103)
-#define SHOOTER_U_AUD_HANDSET_ENO    PMGPIO(18)
+#define SHOOTER_U_AUD_HP_EN          PMGPIO(18)
 #define SHOOTER_U_AUD_SPK_ENO        PMGPIO(19)
 #define SHOOTER_U_3DLCM_PD           PMGPIO(20)
 #define SHOOTER_U_PS_VOUT            PMGPIO(22)
@@ -205,7 +209,8 @@
 #define SHOOTER_U_3DCLK              PMGPIO(26)
 #define SHOOTER_U_AUD_MIC_SEL        PMGPIO(14)
 #define SHOOTER_U_CHG_STAT	     PMGPIO(33)
-//#define SHOOTER_U_PLS_INT            PMGPIO(35)
+#define SHOOTER_U_SDC3_DET	     PMGPIO(34)
+#define SHOOTER_U_PLS_INT            PMGPIO(35)
 #define SHOOTER_U_WIFI_BT_SLEEP_CLK  PMGPIO(38)
 #define SHOOTER_U_TP_RST             PMGPIO(23)
 #define SHOOTER_U_TORCH_SET1         PMGPIO(40)

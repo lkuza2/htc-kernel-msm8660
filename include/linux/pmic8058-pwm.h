@@ -98,6 +98,9 @@ struct pm8058_pwm_period {
 	enum pm_pwm_clk		clk;
 	enum pm_pwm_pre_div	pre_div;
 	int			pre_div_exp;
+
+	int			pwm_value;
+	int			bypass_lut;
 };
 
 /**

@@ -41,7 +41,9 @@
 #include "../devices-msm8x60.h"
 #include "../../../../drivers/video/msm_8x60/mdp_hw.h"
 #include "../../../../drivers/video/msm_8x60/mipi_dsi.h"
-
+#if defined (CONFIG_FB_MSM_MDP_ABL)
+#include <linux/fb.h>
+#endif
 
 extern int panel_type;
 
@@ -58,36 +60,36 @@ struct kset* uevent_kset;
 
 void mdp_color_enhancement(const struct mdp_reg *reg_seq, int size);
 
-static struct pm8058_gpio pwm_gpio_config = {
+static struct pm_gpio pwm_gpio_config = {
 		.direction	= PM_GPIO_DIR_OUT,
 		.output_value	= 0,
 		.output_buffer	= PM_GPIO_OUT_BUF_CMOS,
 		.pull		= PM_GPIO_PULL_NO,
 		.out_strength	= PM_GPIO_STRENGTH_HIGH,
 		.function	= PM_GPIO_FUNC_NORMAL,
-		.vin_sel	= PM_GPIO_VIN_L5,
+		.vin_sel	= PM8058_GPIO_VIN_L5,
 		.inv_int_pol	= 0,
 };
 
-static struct pm8058_gpio clk_gpio_config_on = {
+static struct pm_gpio clk_gpio_config_on = {
 				.direction	= PM_GPIO_DIR_OUT,
 				.output_value	= 1,
 				.output_buffer	= PM_GPIO_OUT_BUF_CMOS,
 				.pull		= PM_GPIO_PULL_NO,
 				.out_strength	= PM_GPIO_STRENGTH_HIGH,
 				.function	= PM_GPIO_FUNC_2,
-				.vin_sel	= PM_GPIO_VIN_L5,
+				.vin_sel	= PM8058_GPIO_VIN_L5,
 				.inv_int_pol	= 0,
 };
 
-static struct pm8058_gpio clk_gpio_config_off = {
+static struct pm_gpio clk_gpio_config_off = {
 				.direction	= PM_GPIO_DIR_OUT,
 				.output_value	= 0,
 				.output_buffer	= PM_GPIO_OUT_BUF_CMOS,
 				.pull		= PM_GPIO_PULL_NO,
 				.out_strength	= PM_GPIO_STRENGTH_HIGH,
 				.function	= PM_GPIO_FUNC_NORMAL,
-				.vin_sel	= PM_GPIO_VIN_L5,
+				.vin_sel	= PM8058_GPIO_VIN_L5,
 				.inv_int_pol	= 0,
 };
 
@@ -113,13 +115,13 @@ static void shooter_u_panel_power(int onoff)
 	if (!init) {
 		l12_3v = regulator_get(NULL, "8058_l12");
 		if (IS_ERR(l12_3v)) {
-			pr_err("%s: unable to get 8058_l12\n", __func__);
+			PR_DISP_ERR("%s: unable to get 8058_l12\n", __func__);
 			goto fail;
 		}
 
 		lvs1_1v8 = regulator_get(NULL, "8901_lvs1");
 		if (IS_ERR(lvs1_1v8)) {
-			pr_err("%s: unable to get 8901_lvs1\n", __func__);
+			PR_DISP_ERR("%s: unable to get 8901_lvs1\n", __func__);
 			goto fail;
 		}
 
@@ -128,7 +130,7 @@ static void shooter_u_panel_power(int onoff)
 		else
 			ret = regulator_set_voltage(l12_3v, 3200000, 3200000);
 		if (ret) {
-			pr_err("%s: error setting l12_3v voltage\n", __func__);
+			PR_DISP_ERR("%s: error setting l12_3v voltage\n", __func__);
 			goto fail;
 		}
 
@@ -142,34 +144,33 @@ static void shooter_u_panel_power(int onoff)
 			return;
 		}
 
-		//gpio_direction_output(GPIO_LCM_RST_N, 0);
 		init = 1;
 	}
 
 	if (!l12_3v || IS_ERR(l12_3v)) {
-		pr_err("%s: l12_3v is not initialized\n", __func__);
+		PR_DISP_ERR("%s: l12_3v is not initialized\n", __func__);
 		return;
 	}
 
 	if (!lvs1_1v8 || IS_ERR(lvs1_1v8)) {
-		pr_err("%s: lvs1_1v8 is not initialized\n", __func__);
+		PR_DISP_ERR("%s: lvs1_1v8 is not initialized\n", __func__);
 		return;
 	}
 
 	if (onoff) {
 		if (regulator_enable(l12_3v)) {
-			pr_err("%s: Unable to enable the regulator:"
+			PR_DISP_ERR("%s: Unable to enable the regulator:"
 					" l12_3v\n", __func__);
 			return;
 		}
 		hr_msleep(1);
 
 		if (regulator_enable(lvs1_1v8)) {
-			pr_err("%s: Unable to enable the regulator:"
+			PR_DISP_ERR("%s: Unable to enable the regulator:"
 					" lvs1_1v8\n", __func__);
 			return;
 		}
-		if ( init == 1 ) {
+		if (init == 1) {
 			init = 2;
 			return;
 		} else {
@@ -191,13 +192,13 @@ static void shooter_u_panel_power(int onoff)
 		gpio_set_value(GPIO_LCM_RST_N, 0);
 		hr_msleep(1);
 		if (regulator_disable(lvs1_1v8)) {
-			pr_err("%s: Unable to enable the regulator:"
+			PR_DISP_ERR("%s: Unable to enable the regulator:"
 					" lvs1_1v8\n", __func__);
 			return;
 		}
 		hr_msleep(1);
 		if (regulator_disable(l12_3v)) {
-			pr_err("%s: Unable to enable the regulator:"
+			PR_DISP_ERR("%s: Unable to enable the regulator:"
 					" l12_3v\n", __func__);
 			return;
 		}
@@ -275,8 +276,8 @@ static struct msm_bus_vectors mdp_sd_ebi_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 334080000,
-		.ib = 417600000,
+		.ab = 168652800,
+		.ib = 337305600,
 	},
 };
 static struct msm_bus_vectors mdp_vga_vectors[] = {
@@ -284,14 +285,14 @@ static struct msm_bus_vectors mdp_vga_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 175110000,
-		.ib = 218887500,
+		.ab = 37478400,
+		.ib = 74956800,
 	},
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 175110000,
-		.ib = 218887500,
+		.ab = 206131200,
+		.ib = 412262400,
 	},
 };
 
@@ -300,15 +301,15 @@ static struct msm_bus_vectors mdp_720p_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 230400000,
-		.ib = 288000000,
+		.ab = 112435200,
+		.ib = 224870400,
 	},
 	/* Master and slaves can be from different fabrics */
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 230400000,
-		.ib = 288000000,
+		.ab = 281088000,
+		.ib = 562176000,
 	},
 };
 
@@ -317,15 +318,15 @@ static struct msm_bus_vectors mdp_1080p_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 334080000,
-		.ib = 417600000,
+		.ab = 252979200,
+		.ib = 505958400,
 	},
 	/* Master and slaves can be from different fabrics */
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 334080000,
-		.ib = 417600000,
+		.ab = 421632000,
+		.ib = 843264000,
 	},
 };
 static struct msm_bus_paths mdp_bus_scale_usecases[] = {
@@ -387,15 +388,15 @@ static struct msm_bus_vectors dtv_bus_def_vectors[] = {
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_SMI,
-		.ab = 435456000,
-		.ib = 544320000,
+		.ab = 252979200,
+		.ib = 505958400,
 	},
 	/* Master and slaves can be from different fabrics */
 	{
 		.src = MSM_BUS_MASTER_MDP_PORT0,
 		.dst = MSM_BUS_SLAVE_EBI_CH0,
-		.ab = 435456000,
-		.ib = 544320000,
+		.ab = 421632000,
+		.ib = 843264000,
 	},
 };
 static struct msm_bus_paths dtv_bus_scale_usecases[] = {
@@ -1119,6 +1120,22 @@ int shooter_u_mdp_gamma(void)
 	return 0;
 }
 
+#if defined (CONFIG_FB_MSM_MDP_ABL)
+static struct gamma_curvy gamma_tbl = {
+	.gamma_len = 33,
+	.bl_len = 8,
+	.ref_y_gamma = {0, 1, 1, 2, 3, 5, 10, 15, 20, 28, 39, 51,
+					66, 84, 104, 127, 151, 178, 207, 240, 279,
+					319, 358, 417, 473, 527, 583, 650, 719, 779,
+					853, 943, 1024},
+	.ref_y_shade = {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352,
+					384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704,
+					736, 768, 800, 832, 864, 896, 928, 960, 992, 1024},
+	.ref_bl_lvl = {0, 50, 102, 152, 237, 371, 703, 1024},
+	.ref_y_lvl = {0, 138, 218, 298, 424, 601, 818, 1024},
+};
+#endif
+
 static struct msm_panel_common_pdata mdp_pdata = {
 	.gpio = 28,
 	.mdp_core_clk_rate = 200000000,
@@ -1129,6 +1146,9 @@ static struct msm_panel_common_pdata mdp_pdata = {
 #endif
 	.mdp_color_enhance = shooter_u_mdp_color_enhance,
 	.mdp_gamma = shooter_u_mdp_gamma,
+#if defined (CONFIG_FB_MSM_MDP_ABL)
+	.abl_gamma_tbl = &gamma_tbl,
+#endif
 };
 
 static void __init msm_fb_add_devices(void)
@@ -1173,7 +1193,7 @@ int __init shooter_u_init_panel(struct resource *res, size_t size)
 
 static void shooter_u_3Dpanel_on(bool bLandscape)
 {
-	struct pw8058_pwm_config pwm_conf;
+	struct pm8058_pwm_period pwm_conf;
 	int rc;
 
 	led_brightness_switch("lcd-backlight", 254);
@@ -1182,22 +1202,24 @@ static void shooter_u_3Dpanel_on(bool bLandscape)
 		mipi_novatek_panel_data.mipi_send_cmds(novatek_3vci_cmds, ARRAY_SIZE(novatek_3vci_cmds));
 	}
 	pwm_gpio_config.output_value = 1;
-	rc = pm8058_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
+	rc = pm8xxx_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
 	if (rc < 0)
-		pr_err("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DLCM_PD);
+		PR_DISP_ERR("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DLCM_PD);
 
-	rc = pm8058_gpio_config(SHOOTER_U_3DCLK, &clk_gpio_config_on);
+	rc = pm8xxx_gpio_config(SHOOTER_U_3DCLK, &clk_gpio_config_on);
 	if (rc < 0)
-		pr_err("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DCLK);
+		PR_DISP_ERR("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DCLK);
 
 	pwm_disable(pwm_3d);
 	pwm_conf.pwm_size = 9;
 	pwm_conf.clk = PM_PWM_CLK_19P2MHZ;
 	pwm_conf.pre_div = PM_PWM_PREDIVIDE_3;
 	pwm_conf.pre_div_exp = 6;
+//TODO fix these.
 	pwm_conf.pwm_value = 255;
 	pwm_conf.bypass_lut = 1;
-	pwm_configure(pwm_3d, &pwm_conf);
+//	pwm_configure(pwm_3d, &pwm_conf);
+////////
 	pwm_enable(pwm_3d);
 
 	if(bLandscape) {
@@ -1224,15 +1246,15 @@ static void shooter_u_3Dpanel_off(void)
 		mipi_novatek_panel_data.mipi_send_cmds(novatek_2vci_cmds, ARRAY_SIZE(novatek_2vci_cmds));
 	}
 
-	rc = pm8058_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
+	rc = pm8xxx_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
 	if (rc < 0)
-		pr_err("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DLCM_PD);
+		PR_DISP_ERR("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DLCM_PD);
 	mdp_color_enhancement(mdp_sharp_barrier_off, ARRAY_SIZE(mdp_sharp_barrier_off));
 	pwm_disable(pwm_3d);
 
-	rc = pm8058_gpio_config(SHOOTER_U_3DCLK, &clk_gpio_config_off);
+	rc = pm8xxx_gpio_config(SHOOTER_U_3DCLK, &clk_gpio_config_off);
 	if (rc < 0)
-		pr_err("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DCLK);
+		PR_DISP_ERR("%s pmic gpio config gpio %d failed\n", __func__, SHOOTER_U_3DCLK);
 	gpio_set_value(SHOOTER_U_CTL_3D_1, 0);
 	gpio_set_value(SHOOTER_U_CTL_3D_2, 0);
 	gpio_set_value(SHOOTER_U_CTL_3D_3, 0);

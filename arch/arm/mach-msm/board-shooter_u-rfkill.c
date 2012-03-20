@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009 Google, Inc.
- * Copyright (C) 2009 HTC Corporation.
+ * Copyright (C) 2010 HTC Corporation.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -13,16 +13,17 @@
  *
  */
 
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/module.h>
+/* Control bluetooth power for shooter_u platform */
+
 #include <linux/platform_device.h>
+#include <linux/module.h>
+#include <linux/device.h>
 #include <linux/rfkill.h>
+#include <linux/delay.h>
 #include <linux/gpio.h>
 #include <asm/mach-types.h>
 
-#include <mach/htc_sleep_clk.h>
-
+#include <linux/mfd/pmic8058.h>
 #include "board-shooter_u.h"
 
 static struct rfkill *bt_rfk;
@@ -141,10 +142,11 @@ static uint32_t shooter_u_bt_off_table[] = {
 static void config_bt_table(uint32_t *table, int len)
 {
 	int n, rc;
+
 	for (n = 0; n < len; n++) {
 		rc = gpio_tlmm_config(table[n], GPIO_CFG_ENABLE);
 		if (rc) {
-			pr_err("[Camera]%s: gpio_tlmm_config(%#x)=%d\n",
+			pr_err("[BT]%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, table[n], rc);
 			break;
 		}
@@ -158,7 +160,7 @@ static void shooter_u_config_bt_on(void)
 	/* set bt on configuration*/
 	config_bt_table(shooter_u_bt_on_table,
 				ARRAY_SIZE(shooter_u_bt_on_table));
-	mdelay(2);
+	mdelay(5);
 
 	/* BT_RESET_N */
 	gpio_set_value(SHOOTER_U_GPIO_BT_RESET_N, 0);
@@ -229,23 +231,28 @@ static struct rfkill_ops shooter_u_rfkill_ops = {
 static int shooter_u_rfkill_probe(struct platform_device *pdev)
 {
 	int rc = 0;
-	bool default_state = true;  /* off */
+	bool default_state = true; /* off */
 
+#if 0 /* Is this necessary? */
 	rc = gpio_request(SHOOTER_U_GPIO_BT_RESET_N, "bt_reset");
 	if (rc)
 		goto err_gpio_reset;
 	rc = gpio_request(SHOOTER_U_GPIO_BT_SHUTDOWN_N, "bt_shutdown");
 	if (rc)
 		goto err_gpio_shutdown;
+#endif
 
 	/* always turn on clock? */
+/*
 	htc_wifi_bt_sleep_clk_ctl(CLK_ON, ID_BT);
+*/
+
 	mdelay(2);
 
 	bluetooth_set_power(NULL, default_state);
 
 	bt_rfk = rfkill_alloc(bt_name, &pdev->dev, RFKILL_TYPE_BLUETOOTH,
-				&shooter_u_rfkill_ops, NULL);
+						&shooter_u_rfkill_ops, NULL);
 	if (!bt_rfk) {
 		rc = -ENOMEM;
 		goto err_rfkill_alloc;
@@ -264,19 +271,24 @@ static int shooter_u_rfkill_probe(struct platform_device *pdev)
 err_rfkill_reg:
 	rfkill_destroy(bt_rfk);
 err_rfkill_alloc:
+#if 0
 	gpio_free(SHOOTER_U_GPIO_BT_SHUTDOWN_N);
 err_gpio_shutdown:
 	gpio_free(SHOOTER_U_GPIO_BT_RESET_N);
 err_gpio_reset:
+#endif
 	return rc;
 }
 
 static int shooter_u_rfkill_remove(struct platform_device *dev)
 {
 	rfkill_unregister(bt_rfk);
+	/*rfkill_free(bt_rfk);*/
 	rfkill_destroy(bt_rfk);
+#if 0
 	gpio_free(SHOOTER_U_GPIO_BT_SHUTDOWN_N);
 	gpio_free(SHOOTER_U_GPIO_BT_RESET_N);
+#endif
 
 	return 0;
 }
@@ -292,9 +304,6 @@ static struct platform_driver shooter_u_rfkill_driver = {
 
 static int __init shooter_u_rfkill_init(void)
 {
-	if (!machine_is_shooter_u())
-		return 0;
-
 	return platform_driver_register(&shooter_u_rfkill_driver);
 }
 

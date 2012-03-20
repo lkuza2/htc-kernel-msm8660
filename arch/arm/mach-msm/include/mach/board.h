@@ -381,6 +381,7 @@ enum msm_mdp_hw_revision {
 	MDP_REV_42,
 };
 
+struct dsi_cmd_desc;
 struct msm_panel_common_pdata {
 	uintptr_t hw_revision_addr;
 	int gpio;
@@ -402,6 +403,7 @@ struct msm_panel_common_pdata {
 	int (*writeback_offset)(void);
 	int (*mdp_color_enhance)(void);
 	int (*mdp_gamma)(void);
+	int (*mipi_send_cmds)(struct dsi_cmd_desc *cmds, uint32_t len);
 	void (*mdp_img_stick_wa)(bool);
 	unsigned long update_interval;
 	atomic_t img_stick_on;

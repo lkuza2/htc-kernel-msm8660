@@ -2377,6 +2377,7 @@ static struct platform_device android_pmem_smipool_device = {
 	.dev = { .platform_data = &android_pmem_smipool_pdata },
 };
 #endif
+
 static void __init msm8x60_allocate_memory_regions(void)
 {
 	unsigned long size;

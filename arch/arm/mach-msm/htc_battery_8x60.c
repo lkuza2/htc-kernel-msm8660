@@ -747,7 +747,7 @@ static void mbat_in_func(struct work_struct *work)
 
 	BATT_LOG("shut down device due to MBAT_IN interrupt");
 	htc_battery_set_charging(0);
-	machine_power_off();
+//	machine_power_off();
 
 }
 

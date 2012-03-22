@@ -3066,7 +3066,7 @@ static long msm_ioctl_config(struct file *filep, unsigned int cmd,
 				else if (flash_info.ctrl_data.led_state == 2)
 					flash_info.ctrl_data.led_state = 8;
 			}
-			rc = msm_flash_ctrl(pmsm->sync->sdata, &flash_info);
+//			rc = msm_flash_ctrl(pmsm->sync->sdata, &flash_info);
 		}
 		break;
 	}

@@ -1426,7 +1426,7 @@ static uint32_t sp3d_spi_gpio[] = {
 };
 #endif
 
-#if defined(CONFIG_SP3D) || defined(CONFIG_QS_S5K4E1)
+#if defined(CONFIG_SP3D) || defined(CONFIG_QS_S5K4E1) || defined(CONFIG_S5K6AAFX)
 static int camera_sensor_power_enable(char *power, unsigned volt)
 {
 	struct regulator *sensor_power;
@@ -1805,6 +1805,7 @@ struct resource msm_camera_resources[] = {
 	},
 };
 
+#if defined(CONFIG_SP3D) || defined(CONFIG_QS_S5K4E1)
 int aat1277_flashlight_control(int mode);
 static int flashlight_control(int mode)
 {
@@ -1819,7 +1820,9 @@ static struct msm_camera_sensor_flash_src msm_flash_src = {
 	.flash_sr_type				= MSM_CAMERA_FLASH_SRC_CURRENT_DRIVER,
 	.camera_flash				= flashlight_control,
 };
+#endif
 
+#ifdef CONFIG_SP3D
 static struct spi_board_info sp3d_spi_board_info[] __initdata = {
 	{
 		.modalias	= "sp3d_spi",
@@ -1829,11 +1832,14 @@ static struct spi_board_info sp3d_spi_board_info[] __initdata = {
 		.max_speed_hz	= 15060000,
 	}
 };
+#endif
 
+#if defined(CONFIG_SP3D) || defined(CONFIG_QS_S5K4E1)
 static struct camera_flash_cfg msm_camera_sensor_flash_cfg = {
 	.low_temp_limit		= 10,
 	.low_cap_limit		= 15,
 };
+#endif
 
 #ifdef CONFIG_SP3D
 static struct msm_camera_sensor_flash_data flash_sp3d = {
@@ -2737,7 +2743,7 @@ static struct rpm_regulator_init_data rpm_regulator_init_data[] = {
 	RPM_LDO(PM8058_L9,  0, 1, 0, 1800000, 1800000, LDO300HMIN),
 	RPM_LDO(PM8058_L10, 0, 1, 0, 2850000, 2850000, LDO300HMIN),
 	RPM_LDO(PM8058_L11, 0, 1, 0, 1800000, 1800000, LDO150HMIN),
-	RPM_LDO(PM8058_L12, 0, 1, 0, 1800000, 1800000, LDO150HMIN),
+	RPM_LDO(PM8058_L12, 0, 1, 0, 3000000, 3200000, LDO150HMIN),
 	RPM_LDO(PM8058_L13, 0, 1, 0, 2050000, 2050000, LDO300HMIN),
 	RPM_LDO(PM8058_L14, 0, 1, 0, 2850000, 2850000, LDO300HMIN),
 	RPM_LDO(PM8058_L15, 0, 1, 0, 2800000, 2800000, LDO300HMIN),
@@ -2771,7 +2777,7 @@ static struct rpm_regulator_init_data rpm_regulator_init_data[] = {
 	RPM_LDO(PM8901_L3,  0, 1, 0, 3300000, 3300000, LDO300HMIN),
 	RPM_LDO(PM8901_L4,  0, 1, 0, 1800000, 1800000, LDO300HMIN),
 	RPM_LDO(PM8901_L5,  0, 0, 0, 2850000, 2850000, LDO300HMIN),
-	RPM_LDO(PM8901_L6,  0, 1, 0, 2200000, 2200000, LDO300HMIN),
+	RPM_LDO(PM8901_L6,  0, 1, 0, 2850000, 2850000, LDO300HMIN),
 
 	/*	 ID       a_on pd ss min_uV   max_uV   init_ip   freq */
 	RPM_SMPS(PM8901_S2, 0, 1, 0, 1300000, 1300000, FTS_HMIN, 1p60),
@@ -2978,7 +2984,7 @@ static struct platform_device htc_headset_pmic = {
 	},
 };
 
-/* HTC_HEADSET_8X60 Driver */
+/* FIX ME
 static struct htc_headset_8x60_platform_data htc_headset_8x60_data = {
 	.adc_mpp	= PM8058_MPP_PM_TO_SYS(XOADC_MPP_10),
 	.adc_amux	= PM_MPP_AIN_AMUX_CH5,
@@ -2988,6 +2994,8 @@ static struct htc_headset_8x60_platform_data htc_headset_8x60_data = {
 };
 
 static struct htc_headset_8x60_platform_data htc_headset_8x60_data_xb = {
+*/
+static struct htc_headset_8x60_platform_data htc_headset_8x60_data = {
 	.adc_mpp	= XOADC_MPP_10,
 	.adc_amux	= PM_MPP_AIN_AMUX_CH5,
 	.adc_mic_bias	= {14375, 26643},
@@ -3517,9 +3525,7 @@ static struct platform_device *shooter_u_devices[] __initdata = {
 	&shooter_u_rfkill,
 #endif
 	&pm8058_leds,
-/* FIXME broke boot
 	&msm8660_device_watchdog,
-*/
 };
 
 static struct memtype_reserve msm8x60_reserve_table[] __initdata = {
@@ -6514,8 +6520,6 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 	BUG_ON(msm_rpmrs_levels_init(msm_rpmrs_levels,
 				ARRAY_SIZE(msm_rpmrs_levels)));
 
-//return;
-
 	/*
 	* Set low power mode of rpm resources:
 	*    PXO	= OFF
@@ -6530,8 +6534,6 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 		pr_err("Failed to initialize XO votes\n");
 
 	msm8x60_check_2d_hardware();
-
-//return;
 
 	/* Change SPM handling of core 1 if PMM 8160 is present. */
 	soc_platform_version = socinfo_get_platform_version();
@@ -6563,7 +6565,6 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 		msm_spm_data_v1[1].reg_init_values[MSM_SPM_REG_SAW_CFG] |= 0x0100UL;
 		msm_spm_init(msm_spm_data_v1, ARRAY_SIZE(msm_spm_data_v1));
 	 }
-//return;
 
 	/*
 	 * Disable regulator info printing so that regulator registration
@@ -6625,7 +6626,8 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 		htc_headset_pmic_data.key_enable_gpio =
 			PM8058_GPIO_PM_TO_SYS(SHOOTER_U_AUD_REMO_EN);
 		htc_headset_8x60.dev.platform_data =
-			&htc_headset_8x60_data_xb;
+			&htc_headset_8x60_data;
+/*			&htc_headset_8x60_data_xb; */
 		htc_headset_mgr_data.headset_config_num =
 			ARRAY_SIZE(htc_headset_mgr_config);
 		htc_headset_mgr_data.headset_config = htc_headset_mgr_config;
@@ -6641,9 +6643,6 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 
 	platform_add_devices(shooter_u_devices,
 			     ARRAY_SIZE(shooter_u_devices));
-
-//printk(KERN_INFO "[KALIIIIIIIII]");
-//return;
 
 #ifdef CONFIG_ION_MSM
 	shooter_u_ion_init();
@@ -6714,7 +6713,6 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 	gpio_tlmm_config(msm_spi_gpio[1], GPIO_CFG_DISABLE);
 	gpio_tlmm_config(msm_spi_gpio[2], GPIO_CFG_DISABLE);
 	gpio_tlmm_config(msm_spi_gpio[3], GPIO_CFG_DISABLE);
-
 	msm_snddev_init();
 	msm_auxpcm_init();
 	shooter_u_audio_init();
@@ -6726,11 +6724,9 @@ static void __init msm8x60_init(struct msm_board_data *board_data)
 	if (properties_kobj)
 		rc = sysfs_create_group(properties_kobj,
 				&shooter_u_properties_attr_group);
-	if (!properties_kobj || rc)
-		pr_err("failed to create board_properties\n");
+
 	shooter_u_init_keypad();
 	shooter_u_wifi_init();
-
 	headset_device_register();
 }
 

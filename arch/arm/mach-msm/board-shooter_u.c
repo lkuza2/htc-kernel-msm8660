@@ -6755,8 +6755,10 @@ static void __init shooter_u_fixup(struct machine_desc *desc, struct tag *tags,
 	mi->nr_banks = 1;
 	mi->bank[0].start = PHY_BASE_ADDR1;
 	mi->bank[0].size = SIZE_ADDR1;
+/* FIX ME use pyramid mem layout
 	if (mem_size_mb == 1024)
 		mi->bank[0].size += 0x10000000;
+*/
 }
 
 MACHINE_START(SHOOTER_U, "shooter_u")

@@ -9,7 +9,7 @@
 #include <asm/gpio.h>
 #include <asm/io.h>
 #include <linux/skbuff.h>
-#include <linux/wifi_tiwlan.h>
+#include <linux/wlan_plat.h>
 
 #include "board-shooter_u.h"
 
@@ -29,7 +29,7 @@ int shooter_u_wifi_get_mac_addr(unsigned char *buf);
 
 #define WLAN_SKB_BUF_NUM	16
 
-//#define HW_OOB 1
+#define HW_OOB 1
 
 static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
 
@@ -80,11 +80,7 @@ static struct resource shooter_u_wifi_resources[] = {
 		.name		= "bcm4329_wlan_irq",
 		.start		= MSM_GPIO_TO_INT(SHOOTER_U_GPIO_WIFI_IRQ),
 		.end		= MSM_GPIO_TO_INT(SHOOTER_U_GPIO_WIFI_IRQ),
-#ifdef HW_OOB
 		.flags          = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL | IORESOURCE_IRQ_SHAREABLE,
-#else
-		.flags          = IORESOURCE_IRQ | IORESOURCE_IRQ_LOWEDGE,
-#endif
 	},
 };
 
@@ -94,7 +90,7 @@ static struct wifi_platform_data shooter_u_wifi_control = {
 	.set_carddetect = shooter_u_wifi_set_carddetect,
 	.mem_prealloc   = shooter_u_wifi_mem_prealloc,
 	.get_mac_addr	= shooter_u_wifi_get_mac_addr,
-	.dot11n_enable  = 1,
+//	.dot11n_enable  = 1,
 };
 
 static struct platform_device shooter_u_wifi_device = {
@@ -281,4 +277,3 @@ int __init shooter_u_wifi_init(void)
 	ret = platform_device_register(&shooter_u_wifi_device);
 	return ret;
 }
-

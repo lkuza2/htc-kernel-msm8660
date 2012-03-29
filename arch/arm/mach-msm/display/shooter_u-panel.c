@@ -39,8 +39,8 @@
 #include "../devices.h"
 #include "../board-shooter_u.h"
 #include "../devices-msm8x60.h"
-#include "../../../../drivers/video/msm_8x60/mdp_hw.h"
-#include "../../../../drivers/video/msm_8x60/mipi_dsi.h"
+#include "../../../../drivers/video/msm/mdp_hw.h"
+#include "../../../../drivers/video/msm/mipi_dsi.h"
 #if defined (CONFIG_FB_MSM_MDP_ABL)
 #include <linux/fb.h>
 #endif

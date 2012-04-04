@@ -630,7 +630,7 @@ static void tcp_v4_send_reset(struct sock *sk, struct sk_buff *skb)
 	arg.iov[0].iov_len  = sizeof(rep.th);
 
 #ifdef CONFIG_TCP_MD5SIG
-	key = sk ? tcp_v4_md5_do_lookup(sk, ip_hdr(skb)->daddr) : NULL;
+	key = sk ? tcp_v4_md5_do_lookup(sk, ip_hdr(skb)->saddr) : NULL;
 	if (key) {
 		rep.opt[0] = htonl((TCPOPT_NOP << 24) |
 				   (TCPOPT_NOP << 16) |
@@ -909,18 +909,21 @@ int tcp_v4_md5_do_add(struct sock *sk, __be32 addr,
 			}
 			sk_nocaps_add(sk, NETIF_F_GSO_MASK);
 		}
-		if (tcp_alloc_md5sig_pool(sk) == NULL) {
+
+		md5sig = tp->md5sig_info;
+		if (md5sig->entries4 == 0 &&
+		    tcp_alloc_md5sig_pool(sk) == NULL) {
 			kfree(newkey);
 			return -ENOMEM;
 		}
-		md5sig = tp->md5sig_info;
 
 		if (md5sig->alloced4 == md5sig->entries4) {
 			keys = kmalloc((sizeof(*keys) *
 					(md5sig->entries4 + 1)), GFP_ATOMIC);
 			if (!keys) {
 				kfree(newkey);
-				tcp_free_md5sig_pool();
+				if (md5sig->entries4 == 0)
+					tcp_free_md5sig_pool();
 				return -ENOMEM;
 			}
 
@@ -964,6 +967,7 @@ int tcp_v4_md5_do_del(struct sock *sk, __be32 addr)
 				kfree(tp->md5sig_info->keys4);
 				tp->md5sig_info->keys4 = NULL;
 				tp->md5sig_info->alloced4 = 0;
+				tcp_free_md5sig_pool();
 			} else if (tp->md5sig_info->entries4 != i) {
 				/* Need to do some manipulation */
 				memmove(&tp->md5sig_info->keys4[i],
@@ -971,7 +975,6 @@ int tcp_v4_md5_do_del(struct sock *sk, __be32 addr)
 					(tp->md5sig_info->entries4 - i) *
 					 sizeof(struct tcp4_md5sig_key));
 			}
-			tcp_free_md5sig_pool();
 			return 0;
 		}
 	}
@@ -1955,6 +1958,49 @@ void tcp_v4_destroy_sock(struct sock *sk)
 	percpu_counter_dec(&tcp_sockets_allocated);
 }
 EXPORT_SYMBOL(tcp_v4_destroy_sock);
+
+/*
+ * tcp_v4_nuke_addr - destroy all sockets on the given local address
+ */
+void tcp_v4_nuke_addr(__u32 saddr)
+{
+	unsigned int bucket;
+
+	for (bucket = 0; bucket < tcp_hashinfo.ehash_mask; bucket++) {
+		struct hlist_nulls_node *node;
+		struct sock *sk;
+		spinlock_t *lock = inet_ehash_lockp(&tcp_hashinfo, bucket);
+
+restart:
+		spin_lock_bh(lock);
+		sk_nulls_for_each(sk, node, &tcp_hashinfo.ehash[bucket].chain) {
+			struct inet_sock *inet = inet_sk(sk);
+
+			if (inet->inet_rcv_saddr != saddr)
+				continue;
+			if (sysctl_ip_dynaddr && sk->sk_state == TCP_SYN_SENT)
+				continue;
+			if (sock_flag(sk, SOCK_DEAD))
+				continue;
+
+			sock_hold(sk);
+			spin_unlock_bh(lock);
+
+			local_bh_disable();
+			bh_lock_sock(sk);
+			sk->sk_err = ETIMEDOUT;
+			sk->sk_error_report(sk);
+
+			tcp_done(sk);
+			bh_unlock_sock(sk);
+			local_bh_enable();
+			sock_put(sk);
+
+			goto restart;
+		}
+		spin_unlock_bh(lock);
+	}
+}
 
 #ifdef CONFIG_PROC_FS
 /* Proc filesystem TCP sock list dumping. */

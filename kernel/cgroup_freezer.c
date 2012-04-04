@@ -153,6 +153,13 @@ static void freezer_destroy(struct cgroup_subsys *ss,
 	kfree(cgroup_freezer(cgroup));
 }
 
+/* task is frozen or will freeze immediately when next it gets woken */
+static bool is_task_frozen_enough(struct task_struct *task)
+{
+	return frozen(task) ||
+		(task_is_stopped_or_traced(task) && freezing(task));
+}
+
 /*
  * The call to cgroup_lock() in the freezer.state write method prevents
  * a write to that file racing against an attach, and hence the
@@ -163,6 +170,14 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
 			      struct task_struct *task)
 {
 	struct freezer *freezer;
+
+	if ((current != task) && (!capable(CAP_SYS_ADMIN))) {
+		const struct cred *cred = current_cred(), *tcred;
+
+		tcred = __task_cred(task);
+		if (cred->euid != tcred->uid && cred->euid != tcred->suid)
+			return -EPERM;
+	}
 
 	/*
 	 * Anything frozen can't move or be moved to/from.
@@ -231,7 +246,7 @@ static void update_if_frozen(struct cgroup *cgroup,
 	cgroup_iter_start(cgroup, &it);
 	while ((task = cgroup_iter_next(cgroup, &it))) {
 		ntotal++;
-		if (frozen(task))
+		if (is_task_frozen_enough(task))
 			nfrozen++;
 	}
 
@@ -284,7 +299,7 @@ static int try_to_freeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
 	while ((task = cgroup_iter_next(cgroup, &it))) {
 		if (!freeze_task(task, true))
 			continue;
-		if (frozen(task))
+		if (is_task_frozen_enough(task))
 			continue;
 		if (!freezing(task) && !freezer_should_skip(task))
 			num_cant_freeze_now++;

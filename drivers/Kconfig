@@ -52,6 +52,10 @@ source "drivers/i2c/Kconfig"
 
 source "drivers/spi/Kconfig"
 
+source "drivers/spmi/Kconfig"
+
+source "drivers/slimbus/Kconfig"
+
 source "drivers/pps/Kconfig"
 
 source "drivers/ptp/Kconfig"

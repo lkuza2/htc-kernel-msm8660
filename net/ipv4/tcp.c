@@ -2506,6 +2506,15 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info)
 	info->tcpi_rcv_space = tp->rcvq_space.space;
 
 	info->tcpi_total_retrans = tp->total_retrans;
+
+	/*
+	* Expose reference count for socket.
+	*/
+	if (NULL != sk->sk_socket) {
+		struct file *filep = sk->sk_socket->file;
+		if (NULL != filep)
+			info->tcpi_count = atomic_read(&filep->f_count);
+	}
 }
 EXPORT_SYMBOL_GPL(tcp_get_info);
 
@@ -3352,9 +3361,9 @@ int tcp_nuke_addr(struct net *net, struct sockaddr *addr)
 	int family = addr->sa_family;
 	unsigned int bucket;
 
-	struct in_addr *in;
+	struct in_addr *in = NULL;
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
-	struct in6_addr *in6;
+	struct in6_addr *in6 = NULL;
 #endif
 	if (family == AF_INET) {
 		in = &((struct sockaddr_in *)addr)->sin_addr;

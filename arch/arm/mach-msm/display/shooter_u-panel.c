@@ -40,7 +40,7 @@
 #include "../board-shooter_u.h"
 #include "../devices-msm8x60.h"
 #include "../../../../drivers/video/msm/mdp_hw.h"
-#include "../../../../drivers/video/msm/mipi_dsi.h"
+//#include "../../../../drivers/video/msm/mipi_dsi.h"
 #if defined (CONFIG_FB_MSM_MDP_ABL)
 #include <linux/fb.h>
 #endif
@@ -60,7 +60,7 @@ struct kset* uevent_kset;
 
 void mdp_color_enhancement(const struct mdp_reg *reg_seq, int size);
 
-static struct pm_gpio pwm_gpio_config = {
+/*static struct pm_gpio pwm_gpio_config = {
 		.direction	= PM_GPIO_DIR_OUT,
 		.output_value	= 0,
 		.output_buffer	= PM_GPIO_OUT_BUF_CMOS,
@@ -91,7 +91,7 @@ static struct pm_gpio clk_gpio_config_off = {
 				.function	= PM_GPIO_FUNC_NORMAL,
 				.vin_sel	= PM8058_GPIO_VIN_L5,
 				.inv_int_pol	= 0,
-};
+};*/
 
 /*
 TODO:
@@ -529,7 +529,7 @@ static struct mipi_dsi_platform_data mipi_pdata = {
 	.dsi_power_save   = mipi_panel_power,
 };
 
-static char novatek_unlock[] =
+/*static char novatek_unlock[] =
 {
         0xF3, 0xAA,
 };
@@ -547,9 +547,9 @@ static char novatek_2vci[] =
 static char novatek_3vci[] =
 {
         0x03, 0x36,
-};
+};*/
 
-static struct dsi_cmd_desc novatek_2vci_cmds[] = {
+/*static struct dsi_cmd_desc novatek_2vci_cmds[] = {
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
                 sizeof(novatek_unlock), novatek_unlock},
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
@@ -565,7 +565,7 @@ static struct dsi_cmd_desc novatek_3vci_cmds[] = {
                 sizeof(novatek_2vci), novatek_3vci},
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
                 sizeof(novatek_lock), novatek_lock},
-};
+};*/
 
 #define BRI_SETTING_MIN		30
 #define BRI_SETTING_DEF		143
@@ -1295,7 +1295,7 @@ int __init shooter_u_init_panel(struct resource *res, size_t size)
 	return 0;
 }
 
-static void shooter_u_3Dpanel_on(bool bLandscape)
+/**static void shooter_u_3Dpanel_on(bool bLandscape)
 {
 	struct pm8058_pwm_period pwm_conf;
 	int rc;
@@ -1364,7 +1364,7 @@ static void shooter_u_3Dpanel_off(void)
 	gpio_set_value(SHOOTER_U_CTL_3D_3, 0);
 	gpio_set_value(SHOOTER_U_CTL_3D_4, 0);
 	led_brightness_switch("lcd-backlight", last_br_2d);
-}
+}*/
 
 static ssize_t show_3D_mode(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -1390,13 +1390,13 @@ static ssize_t store_3D_mode(struct device *dev,
 		PR_DISP_INFO("%s mode = %d\n", __func__, val);
 		switch (val) {
 		case LANDSCAPE_3D:
-			shooter_u_3Dpanel_on(true);
+		//	shooter_u_3Dpanel_on(true);
 			break;
 		case PORTRAIT_3D:
-			shooter_u_3Dpanel_on(false);
+		//	shooter_u_3Dpanel_on(false);
 			break;
 		case OFF_3D:
-			shooter_u_3Dpanel_off();
+		//	shooter_u_3Dpanel_off();
 			break;
 		default:
 			break;

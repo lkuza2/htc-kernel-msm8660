@@ -60,7 +60,7 @@ struct kset* uevent_kset;
 
 void mdp_color_enhancement(const struct mdp_reg *reg_seq, int size);
 
-/*static struct pm_gpio pwm_gpio_config = {
+static struct pm_gpio pwm_gpio_config = {
 		.direction	= PM_GPIO_DIR_OUT,
 		.output_value	= 0,
 		.output_buffer	= PM_GPIO_OUT_BUF_CMOS,
@@ -91,7 +91,7 @@ static struct pm_gpio clk_gpio_config_off = {
 				.function	= PM_GPIO_FUNC_NORMAL,
 				.vin_sel	= PM8058_GPIO_VIN_L5,
 				.inv_int_pol	= 0,
-};*/
+};
 
 /*
 TODO:
@@ -556,9 +556,9 @@ static char novatek_3vci[] =
                 sizeof(novatek_2vci), novatek_2vci},
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
                 sizeof(novatek_lock), novatek_lock},
-};
+};*/
 
-static struct dsi_cmd_desc novatek_3vci_cmds[] = {
+/*static struct dsi_cmd_desc novatek_3vci_cmds[] = {
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
                 sizeof(novatek_unlock), novatek_unlock},
         {DTYPE_DCS_WRITE1, 1, 0, 0, 0,
@@ -1211,7 +1211,7 @@ struct mdp_reg mdp_sharp_barrier_off[] = {
 int shooter_u_mdp_color_enhance(void)
 {
 	PR_DISP_INFO("%s\n", __func__);
-	//mdp_color_enhancement(shooter_u_color_v11, ARRAY_SIZE(shooter_u_color_v11));
+	mdp_color_enhancement(shooter_u_color_v11, ARRAY_SIZE(shooter_u_color_v11));
 
 	return 0;
 }
@@ -1283,6 +1283,8 @@ int __init shooter_u_init_panel(struct resource *res, size_t size)
 	PR_DISP_INFO("%s: %s\n", __func__, mipi_dsi_cmd_sharp_qhd_panel_device.name);
 
 	mipi_novatek_panel_data.shrink_pwm = shooter_u_shrink_pwm;
+	
+	//mdp_pdata.color_enhancment_tbl = mdp_sharp_barrier_off;
 
 	msm_fb_device.resource = res;
 	msm_fb_device.num_resources = size;
@@ -1295,16 +1297,16 @@ int __init shooter_u_init_panel(struct resource *res, size_t size)
 	return 0;
 }
 
-/**static void shooter_u_3Dpanel_on(bool bLandscape)
+static void shooter_u_3Dpanel_on(bool bLandscape)
 {
 	struct pm8058_pwm_period pwm_conf;
 	int rc;
 
 	led_brightness_switch("lcd-backlight", 254);
 
-	if (mipi_novatek_panel_data.mipi_send_cmds) {
-		mipi_novatek_panel_data.mipi_send_cmds(novatek_3vci_cmds, ARRAY_SIZE(novatek_3vci_cmds));
-	}
+	//if (mipi_novatek_panel_data.mipi_send_cmds) {
+	//	mipi_novatek_panel_data.mipi_send_cmds(novatek_3vci_cmds, ARRAY_SIZE(novatek_3vci_cmds));
+	//}
 	pwm_gpio_config.output_value = 1;
 	rc = pm8xxx_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
 	if (rc < 0)
@@ -1320,8 +1322,8 @@ int __init shooter_u_init_panel(struct resource *res, size_t size)
 	pwm_conf.pre_div = PM_PWM_PREDIVIDE_3;
 	pwm_conf.pre_div_exp = 6;
 //TODO fix these.
-	pwm_conf.pwm_value = 255;
-	pwm_conf.bypass_lut = 1;
+//	pwm_conf.pwm_value = 255;
+//	pwm_conf.bypass_lut = 1;
 //	pwm_configure(pwm_3d, &pwm_conf);
 ////////
 	pwm_enable(pwm_3d);
@@ -1346,9 +1348,9 @@ static void shooter_u_3Dpanel_off(void)
 	int rc;
 	pwm_gpio_config.output_value = 0;
 
-	if (mipi_novatek_panel_data.mipi_send_cmds) {
-		mipi_novatek_panel_data.mipi_send_cmds(novatek_2vci_cmds, ARRAY_SIZE(novatek_2vci_cmds));
-	}
+	//if (mipi_novatek_panel_data.mipi_send_cmds) {
+	//	mipi_novatek_panel_data.mipi_send_cmds(novatek_2vci_cmds, ARRAY_SIZE(novatek_2vci_cmds));
+	//}
 
 	rc = pm8xxx_gpio_config(SHOOTER_U_3DLCM_PD, &pwm_gpio_config);
 	if (rc < 0)
@@ -1364,7 +1366,7 @@ static void shooter_u_3Dpanel_off(void)
 	gpio_set_value(SHOOTER_U_CTL_3D_3, 0);
 	gpio_set_value(SHOOTER_U_CTL_3D_4, 0);
 	led_brightness_switch("lcd-backlight", last_br_2d);
-}*/
+}
 
 static ssize_t show_3D_mode(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -1390,13 +1392,13 @@ static ssize_t store_3D_mode(struct device *dev,
 		PR_DISP_INFO("%s mode = %d\n", __func__, val);
 		switch (val) {
 		case LANDSCAPE_3D:
-		//	shooter_u_3Dpanel_on(true);
+			shooter_u_3Dpanel_on(true);
 			break;
 		case PORTRAIT_3D:
-		//	shooter_u_3Dpanel_on(false);
+			shooter_u_3Dpanel_on(false);
 			break;
 		case OFF_3D:
-		//	shooter_u_3Dpanel_off();
+			shooter_u_3Dpanel_off();
 			break;
 		default:
 			break;
